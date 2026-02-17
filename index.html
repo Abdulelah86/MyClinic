@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title></title>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --panel-w: 320px;
+    --gap: 16px;
+    --border: 1px solid #e5e7eb;
+  }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin: 16px;
+    background:#f8fafc;
+    color:#0f172a;
+  }
+  h1 { text-align:center; margin:0 0 14px; }
+  .layout {
+    display:grid;
+    grid-template-columns: 1fr var(--panel-w);
+    gap: var(--gap);
+    align-items: start;
+  }
+  /* Canvas area (left) */
+  .stage {
+    background:#fff;
+    border: var(--border);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  canvas {
+    width:100%;
+    height:auto;
+    background:#e2e8f0;
+    border: var(--border);
+    border-radius: 12px;
+  }
+  .actions {
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top: 12px;
+  }
+  .btn {
+    padding:10px 16px; border:0; border-radius:8px; cursor:pointer; font-size:15px;
+    background:#e5e7eb; color:#111827;
+  }
+  .name-box {
+    padding:10px 12px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    font-size:16px;
+    width:100%;
+  }
+
+  /* Controls panel (right) */
+  .panel {
+    background:#fff;
+    border: var(--border);
+    border-radius:12px;
+    padding:14px;
+    position: sticky;
+    top: 10px;
+  }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:14px; margin-bottom:6px; color:#334155; }
+  .field select {
+    width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:16px; background:#fff;
+  }
+  .range-row { display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px; }
+  .range-row input[type="range"] { width:100%; }
+  .color-row { display:flex; align-items:center; gap:10px; }
+  .color-row input[type="color"] { width:56px; height:36px; padding:0; border:1px solid #cbd5e1; border-radius:8px; background:#fff; }
+  .muted { color:#64748b; font-size:12px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel { position: static; }
+  }
+</style>
+</head>
+<body>
+  <h1>Customize your card</h1>
+
+  <div class="layout">
+    <!-- Left: Canvas -->
+    <div class="stage">
+      <canvas id="cardCanvas"></canvas>
+      <div class="actions">
+        <!-- Name input BELOW the card -->
+        <input id="nameText" type="text" class="name-box" placeholder="type your name" />
+        <!-- Download button -->
+        <button class="btn" id="downloadBtn">Download PNG</button>
+      </div>
+      <p id="status" class="muted"></p>
+    </div>
+
+    <!-- Right: Controls -->
+    <aside class="panel">
+      <div class="field">
+        <label for="fontFamily">Font</label>
+        <select id="fontFamily">
+          <option value="'IBM Plex Sans', 'IBM Plex Sans Arabic', Poppins, Arial, sans-serif" selected>IBM Plex Sans</option>
+          <option value="'IBM Plex Sans Arabic', 'IBM Plex Sans', Poppins, Arial, sans-serif">IBM Plex Sans Arabic</option>
+          <option value="Poppins, Arial, Helvetica, sans-serif">Poppins</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          <option value="Arial, Helvetica, sans-serif">Arial</option>
+          <option value="Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif">Impact</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="fontSize">Font Size: <span id="fontSizeVal">96</span> px</label>
+        <div class="range-row">
+          <input id="fontSize" type="range" min="24" max="300" value="96" />
+          <span class="muted">smaller / larger</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="posSlider">Vertical Position (<span id="posVal">75</span>%)</label>
+        <div class="range-row">
+          <input id="posSlider" type="range" min="0" max="100" value="85" />
+          <span class="muted">Top ↑ / Bottom ↓</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="textColor">Text Color</label>
+        <div class="color-row">
+          <input id="textColor" type="color" value="#ffffff" />
+          <span id="colorHex" class="muted">#ffffff</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  const nameInput   = document.getElementById('nameText');
+  const fontFamily  = document.getElementById('fontFamily');
+  const fontSize    = document.getElementById('fontSize');
+  const fontSizeVal = document.getElementById('fontSizeVal');
+  const posSlider   = document.getElementById('posSlider');
+  const posVal      = document.getElementById('posVal');
+  const textColor   = document.getElementById('textColor');
+  const colorHex    = document.getElementById('colorHex');
+
+  const canvas = document.getElementById('cardCanvas');
+  const ctx = canvas.getContext('2d');
+  const statusEl = document.getElementById('status');
+
+  const defaults = {
+    img: 'card.png',
+    color: '#ffffff',
+    scale: 0.10
+  };
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Could not load ' + src));
+      img.src = src;
+    });
+  }
+
+  let baseImage = null;
+  async function ensureImage() {
+    if (!baseImage) baseImage = await loadImage(defaults.img);
+    return baseImage;
+  }
+
+  async function draw() {
+    let img;
+    try { img = await ensureImage(); } catch (e) { statusEl.textContent = e.message; return; }
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const name = (nameInput.value || '').trim();
+    if (!name) return;
+
+    const sizePx   = parseInt(fontSize.value, 10);
+    const yPercent = parseInt(posSlider.value, 10) / 100;
+    const baseY    = Math.round(canvas.height * yPercent);
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${sizePx}px ${fontFamily.value}`;
+    ctx.fillStyle = textColor.value || defaults.color;
+    const centerX = Math.round(canvas.width / 2);
+    ctx.fillText(name, centerX, baseY);
+    ctx.restore();
+  }
+
+  [nameInput, fontFamily, fontSize, posSlider, textColor].forEach(el => {
+    el.addEventListener('input', () => {
+      if (el === fontSize) fontSizeVal.textContent = fontSize.value;
+      if (el === posSlider) posVal.textContent = posSlider.value;
+      if (el === textColor) colorHex.textContent = textColor.value;
+      draw();
+    });
+  });
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.download = 'greeting.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  window.addEventListener('load', async () => {
+    posVal.textContent   = posSlider.value;
+    fontSizeVal.textContent = fontSize.value;
+    colorHex.textContent = textColor.value;
+    await ensureImage();
+    draw();
+  });
+</script>
+</body>
+</html>
