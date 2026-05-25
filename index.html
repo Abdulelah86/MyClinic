@@ -155,7 +155,7 @@
   /* ── Card design picker ── */
   .design-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 10px;
   }
 
@@ -345,14 +345,11 @@
     font-family: monospace;
   }
 
-
-
-
-
   /* ── Mobile ── */
   @media (max-width: 900px) {
     .layout { grid-template-columns: 1fr; padding: 12px; }
     .sidebar { position: static; top: auto; }
+    .design-grid { grid-template-columns: 1fr 1fr 1fr; }
   }
 </style>
 </head>
@@ -402,6 +399,14 @@
             <div class="design-tag">Design 2</div>
           </div>
 
+          <div class="design-opt" data-card="card3.png" onclick="selectCard(this)">
+            <img src="card3.png" alt="Design 3" />
+            <div class="checkmark">
+              <svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg>
+            </div>
+            <div class="design-tag">Design 3</div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -425,7 +430,7 @@
       </div>
     </div>
 
-    <!-- Text + Logo Settings -->
+    <!-- Settings -->
     <div class="panel">
       <div class="panel-head">
         <svg viewBox="0 0 24 24"><path d="M4 7V5h16v2M9 5v14M15 5v14M9 12h6"/></svg>
@@ -457,7 +462,7 @@
         <div class="field">
           <label for="posSlider">
             Vertical Position
-            <span class="val"><span id="posVal">70</span>%</span>
+            <span class="val"><span id="posVal">80</span>%</span>
           </label>
           <input id="posSlider" type="range" min="0" max="100" value="80" step="1" />
         </div>
@@ -469,8 +474,6 @@
             <span id="colorHex" class="color-hex">#ffffff</span>
           </div>
         </div>
-
-
 
       </div>
     </div>
@@ -532,7 +535,7 @@
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.font         = `700 ${sizePx}px ${fontSel.value}`;
-    ctx.fillStyle    = colorInput.value || '#003867';
+    ctx.fillStyle    = colorInput.value || '#ffffff';
     ctx.fillText(name, centerX, baseY);
     ctx.restore();
   }
